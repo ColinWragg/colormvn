@@ -6,6 +6,8 @@ function colormvn()
 	local Error
 	local Info
 	local Warning
+	local Hyphen
+	local Success
 
 	local settings_file="$HOME/.colormvn"
 	if [ -e "$settings_file" ]
@@ -16,13 +18,19 @@ function colormvn()
 	Error=${Error:-"$(tput bold)$(tput setaf 1)"}
 	Info=${Info:-"$(tput setaf 4)"}
 	Warning=${Warning:-"$(tput bold)$(tput setaf 3)"}
+	Hyphen=${Hyphen:-"$(tput setaf 6)"}
+	Success=${Success:-"$(tput setaf 2)"}
 	
 	local cmd="mvn $@"
 	echo "$cmd"
 	eval "$cmd" | sed \
-		-e "s:^\[INFO\].*$:${Info}&$(tput sgr0):" \
 		-e "s:^\[WARNING\].*$:${Warning}&$(tput sgr0):" \
-		-e "s:^\[ERROR\].*$:${Error}&$(tput sgr0):"
+		-e "s:^\[ERROR\].*$:${Error}&$(tput sgr0):" \
+		-e "s:---:${Hyphen}---$(tput sgr0)${Info}:g" \
+		-e "s:^\[INFO\] \(Building [[:upper:]].*\)$:\[INFO\] ${Hyphen}\1$(tput sgr0):" \
+		-e "s:FAILURE\|SKIPPED:${Error}&$(tput sgr0):" \
+		-e "s:SUCCESS:${Success}&$(tput sgr0):" \
+		-e "s:^\[INFO\].*$:${Info}&$(tput sgr0):"
 }
 
 colormvn "$@"
