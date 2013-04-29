@@ -3,11 +3,13 @@
 
 function colormvn()
 {
+	# Declare variables local so sourcing the settings file doesn't pollute the environment
+	local BuildBanner
 	local Error
+	local Goal
 	local Info
-	local Warning
-	local Hyphen
 	local Success
+	local Warning
 
 	local settings_file="$HOME/.colormvn"
 	if [ -e "$settings_file" ]
@@ -15,22 +17,55 @@ function colormvn()
 		source "$settings_file"
 	fi
 
+	# Give reasonable defaults
+	BuildBanner=${BuildBanner:-"$(tput setaf 7)"}
 	Error=${Error:-"$(tput bold)$(tput setaf 1)"}
+	Goal=${Goal:-"$(tput setaf 6)"}
 	Info=${Info:-"$(tput setaf 4)"}
+	Success=${Success:-"$(tput bold)$(tput setaf 2)"}
 	Warning=${Warning:-"$(tput bold)$(tput setaf 3)"}
-	Hyphen=${Hyphen:-"$(tput setaf 6)"}
-	Success=${Success:-"$(tput setaf 2)"}
+	Failure=${Failure:-$Error}
+
+	local Reset="$(tput sgr0)"
 	
-	local cmd="mvn $@"
-	echo "$cmd"
-	eval "$cmd" | sed \
-		-e "s:^\[WARNING\].*$:${Warning}&$(tput sgr0):" \
-		-e "s:^\[ERROR\].*$:${Error}&$(tput sgr0):" \
-		-e "s:---:${Hyphen}---$(tput sgr0)${Info}:g" \
-		-e "s:^\[INFO\] \(Building [[:upper:]].*\)$:\[INFO\] ${Hyphen}\1$(tput sgr0):" \
-		-e "s:FAILURE\|SKIPPED:${Error}&$(tput sgr0):" \
-		-e "s:SUCCESS:${Success}&$(tput sgr0):" \
-		-e "s:^\[INFO\].*$:${Info}&$(tput sgr0):"
+	# Regular expressions get ugly fast, so increase readability with variables.
+	local WarningPattern='^\[WARNING\].*$'
+	local WarningReplace="${Warning}&${Reset}"
+	
+	local ErrorPattern='^\[ERROR\].*$'
+	local ErrorReplace="${Error}&${Reset}"
+
+	local GoalPattern='^\(\[INFO\] \)\(--- .*$\)'
+	local GoalReplace="${Info}\1${Reset}${Goal}\2${Reset}"
+	
+	local BuildBannerPattern='^\(\[INFO\] \)\(Building .*\)$'
+	local BuildBannerReplace="${Info}\1${Reset}${BuildBanner}\2${Reset}"
+	
+	local InfoPattern='^\[INFO\].*$'
+	local InfoReplace="${Info}&${Reset}"
+
+	local SuccessPattern='\(BUILD SUCCESS\|SUCCESS\)\(.*\)'
+	local SuccessReplace="${Success}\1${Reset}${Info}\2${Reset}"
+	
+	local FailurePattern='\(BUILD FAILURE\|FAILURE\)\(.*\)'
+	local FailureReplace="${Failure}\1${Reset}${Info}\2${Reset}"
+	
+	local SkippedPattern='\(SKIPPED\)\(.*\)'
+	local SkippedReplace="${Warning}\1${Reset}${Info}\2${Reset}"
+
+	# This is gross, but it works!
+	# IMPORTANT: Order matters.
+	mvn $@ | sed \
+		-e "s:$WarningPattern:$WarningReplace:" \
+		-e "s:$ErrorPattern:$ErrorReplace:" \
+		-e "s:$GoalPattern:$GoalReplace:" \
+		-e "s:$BuildBannerPattern:$BuildBannerReplace:" \
+		-e "s:$InfoPattern:$InfoReplace:" \
+		-e "s:$SuccessPattern:$SuccessReplace:" \
+		-e "s:$FailurePattern:$FailureReplace:" \
+		-e "s:$SkippedPattern:$SkippedReplace:"
+	
+	echo "$Reset"
 }
 
 colormvn "$@"
