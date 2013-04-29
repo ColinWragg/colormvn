@@ -19,7 +19,7 @@ function colormvn()
 	
 	local cmd="mvn $@"
 	echo "$cmd"
-    eval "$cmd" | sed \
+	eval "$cmd" | sed \
 		-e "s:^\[INFO\].*$:${Info}&$(tput sgr0):" \
 		-e "s:^\[WARNING\].*$:${Warning}&$(tput sgr0):" \
 		-e "s:^\[ERROR\].*$:${Error}&$(tput sgr0):"
