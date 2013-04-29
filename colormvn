@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Adapted from http://blog.blindgaenger.net/colorize_maven_output.html
+
+function colormvn()
+{
+	local Error
+	local Info
+	local Warning
+
+	local settings_file="$HOME/.colormvn"
+	if [ -e "$settings_file" ]
+	then
+		source "$settings_file"
+	fi
+
+	Error=${Error:-"$(tput bold)$(tput setaf 1)"}
+	Info=${Info:-"$(tput setaf 4)"}
+	Warning=${Warning:-"$(tput bold)$(tput setaf 3)"}
+	
+	local cmd="mvn $@"
+	echo "$cmd"
+    eval "$cmd" | sed \
+		-e "s:^\[INFO\].*$:${Info}&$(tput sgr0):" \
+		-e "s:^\[WARNING\].*$:${Warning}&$(tput sgr0):" \
+		-e "s:^\[ERROR\].*$:${Error}&$(tput sgr0):"
+}
+
+colormvn "$@"
